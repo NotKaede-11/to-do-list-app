@@ -1,7 +1,7 @@
 # To-Do List Application
 
 ## App Description
-This is a console-based To-Do List application written in 32-bit x86 assembly language using NASM, designed for Windows environments. It allows users to add, view, update, delete, and toggle the completion status of tasks, with support for up to 30 tasks stored in memory and persisted to a file named "tasks.dat". The app features an interactive menu, multi-task input via semicolons, selective deletion and toggling, and customizable task slot limits (10, 15, 20, or 30), making it a practical educational project for low-level programming concepts like file I/O and console handling.
+This is a console-based To-Do List application written in 32-bit x86 assembly language using NASM, designed for Windows environments. Currently in its early development stage, the app features an interactive menu, multi-task input via semicolons, selective deletion and toggling, and customizable task slot limits (10, 15, 20, or 30)—with room for expanding features—making it a practical educational project for low-level programming concepts like file I/O and console handling.
 
 ## App File Components and Generation
 The project consists of two main files: `todo32.asm` (the source code) and `build32.bat` (the build script). The assembly source defines the program's data sections for strings, buffers, and UI elements like menus, prompts, and ASCII borders, along with the text section implementing the main loop, input/output via Windows API calls (e.g., _WriteFile, _ReadFile, _CreateFileA), and logic for task operations.
