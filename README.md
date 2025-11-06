@@ -17,10 +17,10 @@ To update the app (e.g., modify source code, rebuild, or customize features like
 ## Setup Guide
 
 ### Install NASM (The Assembler)
-NASM assembles the 32-bit assembly code into an object file. Download NASM 3.01 for Win32 from the official release builds. Extract the ZIP to a path like C:\nasm-3.01, then add this path to your Windows system PATH via Environment Variables in System Properties. Verify by opening a new Command Prompt and running `nasm -v` to display the version.
+NASM assembles the 32-bit assembly code into an object file. Download NASM 3.01 for Win32 from the [official release builds](https://www.nasm.us/pub/nasm/releasebuilds/3.01/win32/nasm-3.01-win32.zip). Extract the ZIP to a path like C:\nasm-3.01, then add this path to your Windows system PATH via [Environment Variables in System Properties](https://www.youtube.com/shorts/X1vFywT0--g). Verify by opening a new Command Prompt and running `nasm -v` to display the version.
 
 ### Install Visual Studio 2022 (The Linker)
-Visual Studio provides the linker (link.exe) for creating the executable from the object file. Download the free Community edition installer from the official site. During installation, select the "Desktop development with C++" workload and include only essential components: C++ core desktop features, MSVC v143 - VS 2022 C++ x64/x86 build tools, the latest Windows SDK, and Just-In-Time debugger. Complete the installation to access the Developer Command Prompt.
+Visual Studio provides the linker (link.exe) for creating the executable from the object file. Download the free Community edition installer from the [official site](https://visualstudio.microsoft.com/downloads/). During installation, select the "Desktop development with C++" workload and include only essential components: C++ core desktop features, MSVC v143 - VS 2022 C++ x64/x86 build tools, the latest Windows SDK, and Just-In-Time debugger. Complete the installation to access the Developer Command Prompt.
 
 ### Build the Application
 Use the "Developer Command Prompt for VS 2022" (search in Start Menu) to ensure link.exe is in PATH—do not use standard Command Prompt. Navigate to your project directory with `cd`, then execute `build32.bat`. On success, `todo32.exe` appears in the folder; run it directly to use the app. The build process targets console subsystem and x86 architecture for 32-bit compatibility.
