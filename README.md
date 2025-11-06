@@ -30,6 +30,6 @@ Common issues arise from setup errors; refer to this table for solutions.
 
 | Error Message | Cause and Solution |
 |---------------|--------------------|
-| `'nasm' is not recognized...` | NASM PATH not set correctly. Re-add C:\nasm-3.01 to system PATH and restart Command Prompt. [2] |
+| `'nasm' is not recognized...` | NASM PATH not set correctly. Re-add C:\nasm-3.01 to system PATH and restart Command Prompt.|
 | `'link.exe' is not recognized...` | Wrong prompt used. Switch to "Developer Command Prompt for VS 2022".|
 | `Build failed!` | Missing files or assembly errors. Confirm `todo32.asm` and `build32.bat` are in the same directory; check source for syntax issues in .asm file.|
