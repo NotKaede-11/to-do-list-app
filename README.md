@@ -31,7 +31,7 @@ Then execute `build32.bat` by typing its name and pressing Enter:
 ```
 C:\Path\To\Your\Project> build32.bat
 ```
-On success, the prompt will display messages like "Assembling 32-bit todo32.asm...", "Linking 32-bit executable...", and "Build successful! Run todo32.exe", with `todo32.exe` appearing in the folder; run it directly to use the app. The build process targets console subsystem and x86 architecture for 32-bit compatibility.
+On success, `todo32.exe` appears in the folder; run it directly to use the app.
 
 ## Troubleshooting
 Common issues arise from setup errors; refer to this table for solutions.
