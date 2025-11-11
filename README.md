@@ -328,7 +328,20 @@ This project is open source and available under the MIT License.
 
 ---
 
-## 🙏 Acknowledgments
+## � Authors
+
+**Group 3:**
+
+- CARTONEROS, BEOMARC ANDREW D.
+- CARVAJAL, CHRISTIAN EZEKIEL L.
+- CASTILLO, CHARLES
+- GO, MARCO ENRICO S.
+- HANGINON, MARIA FATIMA T.
+- SILVESTRE, DASHIELL B.
+
+---
+
+## �🙏 Acknowledgments
 
 - **NASM** - The Netwide Assembler team
 - **GoLink** - Jeremy Gordon for the lightweight linker

@@ -2,7 +2,15 @@
 ; To-Do List Application for Windows x86 (32-bit)
 ; ==============================================================================
 ; Description: A console-based task management application with file persistence
-; Author: Assembly Programming Project
+; 
+; Authors: Group 3
+;   - CARTONEROS, BEOMARC ANDREW D.
+;   - CARVAJAL, CHRISTIAN EZEKIEL L.
+;   - CASTILLO, CHARLES
+;   - GO, MARCO ENRICO S.
+;   - HANGINON, MARIA FATIMA T.
+;   - SILVESTRE, DASHIELL B.
+; 
 ; Date: 2025
 ; 
 ; Build Instructions:
