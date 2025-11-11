@@ -1,5 +1,21 @@
 ; To-Do List Application for Windows x86 (32-bit)
-; FINAL VERSION - Correct Prompts
+; Final Project To-do-list using Assembly language
+; 
+; GROUP 3 MEMBERS:
+; "HANGINON, MARIA FATIMA T."
+; "CASTILLO, CHARLES"
+; "CARTONEROS, BEOMARC ANDREW D."
+; "CARVAJAL, CHRISTIAN EZEKIEL L."
+; "GO, MARCO ENRICO S."
+; "SILVESTRE, DASHIELL B."
+;
+; Features:
+; - Add, view, update, delete tasks
+; - Toggle task completion status
+; - Save/load tasks to file
+; - Search and sort tasks
+; - Modify task slot limits
+;
 ; Assemble: nasm -f win32 todo32.asm -o todo32.obj
 ; Link: link todo32.obj /subsystem:console /entry:main /machine:x86 kernel32.lib
 
@@ -12,296 +28,360 @@ extern _CreateFileA@28
 extern _CloseHandle@4
 extern _Sleep@4
 
+; =============================================================================
+; CONSTANTS SECTION
+; =============================================================================
 section .data
-    STD_OUTPUT_HANDLE equ -11
-    STD_INPUT_HANDLE equ -10
-    MAX_TASKS equ 30
-    TASK_SIZE equ 64
-    STATUS_OFFSET equ 63
+    ; Windows API Constants
+    STD_OUTPUT_HANDLE        equ -11
+    STD_INPUT_HANDLE         equ -10
+    
+    ; File Operation Constants
+    GENERIC_READ             equ 0x80000000
+    GENERIC_WRITE            equ 0x40000000
+    CREATE_ALWAYS            equ 2
+    OPEN_EXISTING            equ 3
+    FILE_ATTRIBUTE_NORMAL    equ 0x80
+    INVALID_HANDLE_VALUE     equ -1
+    
+    ; Application Constants
+    MAX_TASKS                equ 30
+    TASK_SIZE                equ 64           ; 63 chars + 1 status byte
+    STATUS_OFFSET            equ 63           ; Position of status byte in task buffer
+    
+    ; File name for persistent storage
+    filename                 db "tasks.dat", 0
 
-    GENERIC_READ equ 0x80000000
-    GENERIC_WRITE equ 0x40000000
-    CREATE_ALWAYS equ 2
-    OPEN_EXISTING equ 3
-    FILE_ATTRIBUTE_NORMAL equ 0x80
-    INVALID_HANDLE_VALUE equ -1
+    ; ========================================================================
+    ; UI ELEMENTS - VISUAL COMPONENTS
+    ; ========================================================================
+    
+    ; Separators and Borders (Box-drawing characters for nice UI)
+    separator_thin      db 196, 196, 196, 196, 196, 196, 196, 196, 196, 196, 196, 196, 196, 196, 196, 196, 196, 196, 196, 196, 196, 196, 196, 196, 196, 196, 196, 196, 196, 196, 13, 10
+    separator_thin_len  equ $ - separator_thin
 
-    filename db "tasks.dat", 0
+    separator_top       db 201, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 187, 13, 10
+    separator_top_len   equ $ - separator_top
 
-    separator_thin db 196, 196, 196, 196, 196, 196, 196, 196, 196, 196, 196, 196, 196, 196, 196, 196, 196, 196, 196, 196, 196, 196, 196, 196, 196, 196, 196, 196, 196, 196, 13, 10
-    separator_thin_len equ $ - separator_thin
-
-    separator_top db 201, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 187, 13, 10
-    separator_top_len equ $ - separator_top
-
-    separator_bottom db 200, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 188, 13, 10
+    separator_bottom    db 200, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 188, 13, 10
     separator_bottom_len equ $ - separator_bottom
 
-    border_left db 186, " "
-    border_left_len equ $ - border_left
+    border_left         db 186, " "
+    border_left_len     equ $ - border_left
 
-    newline_only db 13, 10
-    newline_only_len equ $ - newline_only
+    ; Basic formatting
+    newline_only        db 13, 10
+    newline_only_len    equ $ - newline_only
 
-    spinner_1 db "  |", 13, 10
-    spinner_1_len equ $ - spinner_1
+    ; ========================================================================
+    ; ANIMATION ELEMENTS
+    ; ========================================================================
+    spinner_1           db "  |", 13, 10
+    spinner_1_len       equ $ - spinner_1
 
-    spinner_2 db "  /", 13, 10
-    spinner_2_len equ $ - spinner_2
+    spinner_2           db "  /", 13, 10
+    spinner_2_len       equ $ - spinner_2
 
-    spinner_3 db "  -", 13, 10
-    spinner_3_len equ $ - spinner_3
+    spinner_3           db "  -", 13, 10
+    spinner_3_len       equ $ - spinner_3
 
-    spinner_4 db "  \", 13, 10
-    spinner_4_len equ $ - spinner_4
+    spinner_4           db "  \", 13, 10
+    spinner_4_len       equ $ - spinner_4
 
-    saving_msg db "  Saving", 13, 10
-    saving_msg_len equ $ - saving_msg
+    saving_msg          db "  Saving", 13, 10
+    saving_msg_len      equ $ - saving_msg
 
-    loading_msg db "  Loading", 13, 10
-    loading_msg_len equ $ - loading_msg
+    loading_msg         db "  Loading", 13, 10
+    loading_msg_len     equ $ - loading_msg
 
-    header_welcome db 13, 10, "Welcome to Your To-Do List!", 13, 10
-    header_welcome_len equ $ - header_welcome
+    ; ========================================================================
+    ; HEADERS FOR DIFFERENT SCREENS
+    ; ========================================================================
+    header_welcome      db 13, 10, "Welcome to Your To-Do List!", 13, 10
+    header_welcome_len  equ $ - header_welcome
 
-    header_add db 13, 10, "Adding New Task", 13, 10
-    header_add_len equ $ - header_add
+    header_add          db 13, 10, "Adding New Task", 13, 10
+    header_add_len      equ $ - header_add
 
-    header_view db 13, 10, "Your Task List", 13, 10
-    header_view_len equ $ - header_view
+    header_view         db 13, 10, "Your Task List", 13, 10
+    header_view_len     equ $ - header_view
 
-    header_update db 13, 10, "Updating Task", 13, 10
-    header_update_len equ $ - header_update
+    header_update       db 13, 10, "Updating Task", 13, 10
+    header_update_len   equ $ - header_update
 
-    header_delete db 13, 10, "Deleting Tasks", 13, 10
-    header_delete_len equ $ - header_delete
+    header_delete       db 13, 10, "Deleting Tasks", 13, 10
+    header_delete_len   equ $ - header_delete
 
-    header_toggle db 13, 10, "Managing Task Status", 13, 10
-    header_toggle_len equ $ - header_toggle
+    header_toggle       db 13, 10, "Managing Task Status", 13, 10
+    header_toggle_len   equ $ - header_toggle
 
-    header_save db 13, 10, "Saving Your Tasks", 13, 10
-    header_save_len equ $ - header_save
+    header_save         db 13, 10, "Saving Your Tasks", 13, 10
+    header_save_len     equ $ - header_save
 
-    header_load db 13, 10, "Loading Your Tasks", 13, 10
-    header_load_len equ $ - header_load
+    header_load         db 13, 10, "Loading Your Tasks", 13, 10
+    header_load_len     equ $ - header_load
 
-    header_search db 13, 10, "Search Tasks", 13, 10
-    header_search_len equ $ - header_search
+    header_search       db 13, 10, "Search Tasks", 13, 10
+    header_search_len   equ $ - header_search
 
-    prompt_search db "  Enter search term: "
-    prompt_search_len equ $ - prompt_search
+    header_sort         db 13, 10, "Sort Tasks", 13, 10
+    header_sort_len     equ $ - header_sort
 
-    hint_search_case db 13, 10, "  Note: Search is case-sensitive", 13, 10
-    hint_search_case_len equ $ - hint_search_case
+    header_modify_slots db 13, 10, "Modifying Task Slots", 13, 10
+    header_modify_slots_len equ $ - header_modify_slots
 
-    header_sort db 13, 10, "Sort Tasks", 13, 10
-    header_sort_len equ $ - header_sort
+    ; ========================================================================
+    ; PROMPTS AND MESSAGES
+    ; ========================================================================
+    
+    ; Search related messages
+    prompt_search           db "  Enter search term: "
+    prompt_search_len       equ $ - prompt_search
 
-    sort_menu db 13, 10, "  Sort by:", 13, 10, "  1. Alphabetical A-Z", 13, 10, "  2. Alphabetical Z-A", 13, 10, "  3. Status (Incomplete First)", 13, 10, "  4. Status (Complete First)", 13, 10, "  Enter choice: "
-    sort_menu_len equ $ - sort_menu
+    hint_search_case        db 13, 10, "  Note: Search is case-sensitive", 13, 10
+    hint_search_case_len    equ $ - hint_search_case
 
-    msg_sorted db 13, 10, "  >>> Tasks sorted successfully!", 13, 10
-    msg_sorted_len equ $ - msg_sorted
-
-    msg_search_results db 13, 10, "  >>> Found matching tasks:", 13, 10
+    msg_search_results     db 13, 10, "  >>> Found matching tasks:", 13, 10
     msg_search_results_len equ $ - msg_search_results
 
-    msg_no_search_results db 13, 10, "  ... No tasks found matching your search", 13, 10
+    msg_no_search_results  db 13, 10, "  ... No tasks found matching your search", 13, 10
     msg_no_search_results_len equ $ - msg_no_search_results
 
-; ===== MODIFY TASK SLOTS FEATURE =====
-header_modify_slots db 13, 10, "Modifying Task Slots", 13, 10
-header_modify_slots_len equ $ - header_modify_slots
+    ; Sort related messages
+    sort_menu          db 13, 10, "  Sort by:", 13, 10, "  1. Alphabetical A-Z", 13, 10, "  2. Alphabetical Z-A", 13, 10, "  3. Status (Incomplete First)", 13, 10, "  4. Status (Complete First)", 13, 10, "  Enter choice: "
+    sort_menu_len      equ $ - sort_menu
 
-modify_slots_menu db 13, 10, " Select task slot limit:", 13, 10
-modify_slots_menu_len equ $ - modify_slots_menu
+    msg_sorted         db 13, 10, "  >>> Tasks sorted successfully!", 13, 10
+    msg_sorted_len     equ $ - msg_sorted
 
-modify_option_1 db " 1. 10 Tasks (Default)", 13, 10
-modify_option_1_len equ $ - modify_option_1
+    ; Task slot modification messages
+    modify_slots_menu  db 13, 10, " Select task slot limit:", 13, 10
+    modify_slots_menu_len equ $ - modify_slots_menu
 
-modify_option_2 db " 2. 15 Tasks", 13, 10
-modify_option_2_len equ $ - modify_option_2
+    modify_option_1    db " 1. 10 Tasks (Default)", 13, 10
+    modify_option_1_len equ $ - modify_option_1
 
-modify_option_3 db " 3. 20 Tasks", 13, 10
-modify_option_3_len equ $ - modify_option_3
+    modify_option_2    db " 2. 15 Tasks", 13, 10
+    modify_option_2_len equ $ - modify_option_2
 
-modify_option_4 db " 4. 30 Tasks", 13, 10
-modify_option_4_len equ $ - modify_option_4
+    modify_option_3    db " 3. 20 Tasks", 13, 10
+    modify_option_3_len equ $ - modify_option_3
 
-modify_prompt db " Enter choice: "
-modify_prompt_len equ $ - modify_prompt
+    modify_option_4    db " 4. 30 Tasks", 13, 10
+    modify_option_4_len equ $ - modify_option_4
 
-msg_slots_10 db 13, 10, " >>> Task limit set to 10 slots", 13, 10
-msg_slots_10_len equ $ - msg_slots_10
+    modify_prompt      db " Enter choice: "
+    modify_prompt_len  equ $ - modify_prompt
 
-msg_slots_15 db 13, 10, " >>> Task limit set to 15 slots", 13, 10
-msg_slots_15_len equ $ - msg_slots_15
+    ; Slot modification confirmation messages
+    msg_slots_10       db 13, 10, " >>> Task limit set to 10 slots", 13, 10
+    msg_slots_10_len   equ $ - msg_slots_10
 
-msg_slots_20 db 13, 10, " >>> Task limit set to 20 slots", 13, 10
-msg_slots_20_len equ $ - msg_slots_20
+    msg_slots_15       db 13, 10, " >>> Task limit set to 15 slots", 13, 10
+    msg_slots_15_len   equ $ - msg_slots_15
 
-msg_slots_30 db 13, 10, " >>> Task limit set to 30 slots", 13, 10
-msg_slots_30_len equ $ - msg_slots_30
+    msg_slots_20       db 13, 10, " >>> Task limit set to 20 slots", 13, 10
+    msg_slots_20_len   equ $ - msg_slots_20
 
-msg_slot_restored_10 db 13, 10, " >>> Slot limit restored: 10 slots", 13, 10
-msg_slot_restored_10_len equ $ - msg_slot_restored_10
+    msg_slots_30       db 13, 10, " >>> Task limit set to 30 slots", 13, 10
+    msg_slots_30_len   equ $ - msg_slots_30
 
-msg_slot_restored_15 db 13, 10, " >>> Slot limit restored: 15 slots", 13, 10
-msg_slot_restored_15_len equ $ - msg_slot_restored_15
+    msg_slot_restored_10 db 13, 10, " >>> Slot limit restored: 10 slots", 13, 10
+    msg_slot_restored_10_len equ $ - msg_slot_restored_10
 
-msg_slot_restored_20 db 13, 10, " >>> Slot limit restored: 20 slots", 13, 10
-msg_slot_restored_20_len equ $ - msg_slot_restored_20
+    msg_slot_restored_15 db 13, 10, " >>> Slot limit restored: 15 slots", 13, 10
+    msg_slot_restored_15_len equ $ - msg_slot_restored_15
 
-msg_slot_restored_30 db 13, 10, " >>> Slot limit restored: 30 slots", 13, 10
-msg_slot_restored_30_len equ $ - msg_slot_restored_30
+    msg_slot_restored_20 db 13, 10, " >>> Slot limit restored: 20 slots", 13, 10
+    msg_slot_restored_20_len equ $ - msg_slot_restored_20
 
-hint_add_task db 13, 10, "  Tip: Separate multiple tasks with semicolon (;)", 13, 10, "  Example: task1;task2;task3", 13, 10
-hint_add_task_len equ $ - hint_add_task
+    msg_slot_restored_30 db 13, 10, " >>> Slot limit restored: 30 slots", 13, 10
+    msg_slot_restored_30_len equ $ - msg_slot_restored_30
 
-hint_delete_selection db 13, 10, "  Tip: Enter 0 to cancel, or task numbers separated by space", 13, 10, "  Example: 1 3 5", 13, 10
-hint_delete_selection_len equ $ - hint_delete_selection
+    ; User guidance hints
+    hint_add_task          db 13, 10, "  Tip: Separate multiple tasks with semicolon (;)", 13, 10, "  Example: task1;task2;task3", 13, 10
+    hint_add_task_len      equ $ - hint_add_task
 
-hint_toggle_multiple db 13, 10, "  Tip: Enter task numbers separated by space", 13, 10, "  Example: 2 4 6", 13, 10
-hint_toggle_multiple_len equ $ - hint_toggle_multiple
+    hint_delete_selection  db 13, 10, "  Tip: Enter 0 to cancel, or task numbers separated by space", 13, 10, "  Example: 1 3 5", 13, 10
+    hint_delete_selection_len equ $ - hint_delete_selection
 
-hint_esc_cancel db 13, 10, " >>> Tip: Press 0 then Enter to cancel any operation", 13, 10
-hint_esc_cancel_len equ $ - hint_esc_cancel
+    hint_toggle_multiple   db 13, 10, "  Tip: Enter task numbers separated by space", 13, 10, "  Example: 2 4 6", 13, 10
+    hint_toggle_multiple_len equ $ - hint_toggle_multiple
 
-delete_selection_prompt db " Enter task numbers: "
-delete_selection_prompt_len equ $ - delete_selection_prompt
+    hint_esc_cancel        db 13, 10, " >>> Tip: Press 0 then Enter to cancel any operation", 13, 10
+    hint_esc_cancel_len    equ $ - hint_esc_cancel
 
-msg_operation_cancelled db 13, 10, " ... Operation cancelled", 13, 10
-msg_operation_cancelled_len equ $ - msg_operation_cancelled
+    ; Operation prompts
+    delete_selection_prompt db " Enter task numbers: "
+    delete_selection_prompt_len equ $ - delete_selection_prompt
 
-toggle_multiple_prompt db " Enter task numbers: "
-toggle_multiple_prompt_len equ $ - toggle_multiple_prompt
+    toggle_multiple_prompt db " Enter task numbers: "
+    toggle_multiple_prompt_len equ $ - toggle_multiple_prompt
 
-msg_tasks_toggled db 13, 10, " >>> Tasks toggled successfully!", 13, 10
-msg_tasks_toggled_len equ $ - msg_tasks_toggled
+    ; Status messages
+    msg_operation_cancelled db 13, 10, " ... Operation cancelled", 13, 10
+    msg_operation_cancelled_len equ $ - msg_operation_cancelled
 
-msg_no_valid_tasks db 13, 10, "  ... No valid tasks toggled", 13, 10
-msg_no_valid_tasks_len equ $ - msg_no_valid_tasks
+    msg_tasks_toggled      db 13, 10, " >>> Tasks toggled successfully!", 13, 10
+    msg_tasks_toggled_len  equ $ - msg_tasks_toggled
 
-msg_tasks_added db 13, 10, " >>> Tasks added successfully!", 13, 10
-msg_tasks_added_len equ $ - msg_tasks_added
+    msg_no_valid_tasks     db 13, 10, "  ... No valid tasks toggled", 13, 10
+    msg_no_valid_tasks_len equ $ - msg_no_valid_tasks
 
-msg_task_updated db 13, 10, "  >>> Task updated successfully!", 13, 10
-msg_task_updated_len equ $ - msg_task_updated
+    msg_tasks_added        db 13, 10, " >>> Tasks added successfully!", 13, 10
+    msg_tasks_added_len    equ $ - msg_tasks_added
 
-    menu_header db 13, 10, "===== TO-DO LIST APPLICATION =====", 13, 10
-    menu_header_len equ $ - menu_header
+    msg_task_updated       db 13, 10, "  >>> Task updated successfully!", 13, 10
+    msg_task_updated_len   equ $ - msg_task_updated
 
-    status_header db "Status: "
-    status_header_len equ $ - status_header
+    ; ========================================================================
+    ; MAIN MENU AND CORE UI ELEMENTS
+    ; ========================================================================
+    menu_header        db 13, 10, "===== TO-DO LIST APPLICATION =====", 13, 10
+    menu_header_len    equ $ - menu_header
 
-    completed_text db " completed, "
+    ; Status display components
+    status_header      db "Status: "
+    status_header_len  equ $ - status_header
+
+    completed_text     db " completed, "
     completed_text_len equ $ - completed_text
 
-    remaining_text db " remaining"
+    remaining_text     db " remaining"
     remaining_text_len equ $ - remaining_text
 
-    total_text db 13, 10, "Total: "
-    total_text_len equ $ - total_text
+    total_text         db 13, 10, "Total: "
+    total_text_len     equ $ - total_text
 
-    menu_part1 db "  1. Add Task", 13, 10, "  2. View All Tasks", 13, 10, "  3. Update Task", 13, 10, "  4. Delete Task", 13, 10
-    menu_part2 db "  5. Toggle Complete", 13, 10, "  6. Save Tasks", 13, 10, "  7. Load Tasks", 13, 10, "  8. Modify Task Slots", 13, 10, "  9. Search Tasks", 13, 10, "  10. Sort Tasks", 13, 10, "  11. Exit", 13, 10
-    menu_part1_len equ menu_part2 - menu_part1
-    menu_part2_len equ $ - menu_part2
+    ; Menu options (split for better organization)
+    menu_part1         db "  1. Add Task", 13, 10, "  2. View All Tasks", 13, 10, "  3. Update Task", 13, 10, "  4. Delete Task", 13, 10
+    menu_part2         db "  5. Toggle Complete", 13, 10, "  6. Save Tasks", 13, 10, "  7. Load Tasks", 13, 10, "  8. Modify Task Slots", 13, 10, "  9. Search Tasks", 13, 10, "  10. Sort Tasks", 13, 10, "  11. Exit", 13, 10
+    menu_part1_len     equ menu_part2 - menu_part1
+    menu_part2_len     equ $ - menu_part2
 
+    ; Delete operation prompts
     delete_mode_prompt db 13, 10, "  Choose delete mode:", 13, 10, "    1. Delete All Tasks", 13, 10, "    2. Delete Selection", 13, 10, "  Enter choice: "
     delete_mode_prompt_len equ $ - delete_mode_prompt
 
     delete_selection_hint db 13, 10, "  Enter task numbers separated by space:", 13, 10, "  Example: 1 3 5", 13, 10, "  Enter: "
     delete_selection_hint_len equ $ - delete_selection_hint
 
-    choose_option db "  Choose option: "
-    choose_option_len equ $ - choose_option
+    ; General prompts
+    choose_option      db "  Choose option: "
+    choose_option_len  equ $ - choose_option
 
-    checkbox_incomplete db 91, 32, 93, 32
+    ; Task display elements
+    checkbox_incomplete db 91, 32, 93, 32    ; [ ]
     checkbox_incomplete_len equ $ - checkbox_incomplete
 
-    checkbox_complete db 91, 43, 93, 32
+    checkbox_complete   db 91, 43, 93, 32    ; [+]
     checkbox_complete_len equ $ - checkbox_complete
 
-    prompt_task db 13, 10, "  Enter task(s) (each task max 60 chars, separate with ;): "
-    prompt_task_len equ $ - prompt_task
+    prompt_task        db 13, 10, "  Enter task(s) (each task max 60 chars, separate with ;): "
+    prompt_task_len    equ $ - prompt_task
 
-    prompt_update db 13, 10, "  Enter task number to update: "
-    prompt_update_len equ $ - prompt_update
+    prompt_update      db 13, 10, "  Enter task number to update: "
+    prompt_update_len  equ $ - prompt_update
 
-    prompt_new_task db 13, 10, "  Enter new task text: "
+    prompt_new_task    db 13, 10, "  Enter new task text: "
     prompt_new_task_len equ $ - prompt_new_task
 
-    prompt_delete db 13, 10, "  Enter task number to delete: "
-    prompt_delete_len equ $ - prompt_delete
+    prompt_delete      db 13, 10, "  Enter task number to delete: "
+    prompt_delete_len  equ $ - prompt_delete
 
-    prompt_toggle db 13, 10, "  Enter task number to toggle: "
-    prompt_toggle_len equ $ - prompt_toggle
+    prompt_toggle      db 13, 10, "  Enter task number to toggle: "
+    prompt_toggle_len  equ $ - prompt_toggle
 
-    msg_added db 13, 10, "  >>> Task added successfully!", 13, 10
-    msg_added_len equ $ - msg_added
+    ; Success/error messages
+    msg_added          db 13, 10, "  >>> Task added successfully!", 13, 10
+    msg_added_len      equ $ - msg_added
 
-    msg_updated db 13, 10, "  >>> Task updated successfully!", 13, 10
-    msg_updated_len equ $ - msg_updated
+    msg_updated        db 13, 10, "  >>> Task updated successfully!", 13, 10
+    msg_updated_len    equ $ - msg_updated
 
-    msg_deleted db 13, 10, "  >>> Task(s) deleted!", 13, 10
-    msg_deleted_len equ $ - msg_deleted
+    msg_deleted        db 13, 10, "  >>> Task(s) deleted!", 13, 10
+    msg_deleted_len    equ $ - msg_deleted
 
-    msg_deleted_all db 13, 10, "  >>> All tasks deleted!", 13, 10
+    msg_deleted_all    db 13, 10, "  >>> All tasks deleted!", 13, 10
     msg_deleted_all_len equ $ - msg_deleted_all
 
-    msg_toggled db 13, 10, "  >>> Task status toggled!", 13, 10
-    msg_toggled_len equ $ - msg_toggled
+    msg_toggled        db 13, 10, "  >>> Task status toggled!", 13, 10
+    msg_toggled_len    equ $ - msg_toggled
 
-    msg_saved db 13, 10, "  >>> Tasks saved to file!", 13, 10
-    msg_saved_len equ $ - msg_saved
+    msg_saved          db 13, 10, "  >>> Tasks saved to file!", 13, 10
+    msg_saved_len      equ $ - msg_saved
 
-    msg_loaded db 13, 10, "  >>> Tasks loaded from file!", 13, 10
-    msg_loaded_len equ $ - msg_loaded
+    msg_loaded         db 13, 10, "  >>> Tasks loaded from file!", 13, 10
+    msg_loaded_len     equ $ - msg_loaded
 
-    msg_save_error db 13, 10, "  ... Error saving to file", 13, 10
+    msg_save_error     db 13, 10, "  ... Error saving to file", 13, 10
     msg_save_error_len equ $ - msg_save_error
 
-    msg_load_error db 13, 10, "  ... No saved tasks found", 13, 10
+    msg_load_error     db 13, 10, "  ... No saved tasks found", 13, 10
     msg_load_error_len equ $ - msg_load_error
 
-    msg_full db 13, 10, "  ... Task list is full", 13, 10
-    msg_full_len equ $ - msg_full
+    msg_full           db 13, 10, "  ... Task list is full", 13, 10
+    msg_full_len       equ $ - msg_full
 
-    msg_empty db 13, 10, "  ... No tasks in list", 13, 10
-    msg_empty_len equ $ - msg_empty
+    msg_empty          db 13, 10, "  ... No tasks in list", 13, 10
+    msg_empty_len      equ $ - msg_empty
 
-    msg_invalid db 13, 10, "  ... Invalid option", 13, 10
-    msg_invalid_len equ $ - msg_invalid
+    msg_invalid        db 13, 10, "  ... Invalid option", 13, 10
+    msg_invalid_len    equ $ - msg_invalid
 
-    newline db 13, 10
-    newline_len equ $ - newline
+    ; Basic formatting
+    newline            db 13, 10
+    newline_len        equ $ - newline
 
-    task_item_prefix db "  "
+    task_item_prefix   db "  "
     task_item_prefix_len equ $ - task_item_prefix
 
-    dot_space db ". "
-    dot_space_len equ $ - dot_space
+    dot_space          db ". "
+    dot_space_len      equ $ - dot_space
 
+; =============================================================================
+; UNINITIALIZED DATA SECTION
+; =============================================================================
 section .bss
-    max_tasks_limit resd 1
-    toggle_count resd 1
-    added_count resd 1
-    tasks resb MAX_TASKS * TASK_SIZE
-    task_count resd 1
-    completed_count resd 1
-    first_run resd 1
-    input_buffer resb 1024
-    bytes_read resd 1
-    bytes_written resd 1
-    stdout_handle resd 1
-    stdin_handle resd 1
-    file_handle resd 1
-    num_buffer resb 12
-    delete_flags resb MAX_TASKS
+    ; Application state variables
+    max_tasks_limit    resd 1      ; Current maximum number of tasks allowed
+    toggle_count       resd 1      ; Counter for toggle operations
+    added_count        resd 1      ; Counter for added tasks
+    
+    ; Task storage - each task is TASK_SIZE bytes (63 chars + 1 status byte)
+    tasks              resb MAX_TASKS * TASK_SIZE
+    
+    ; Counters
+    task_count         resd 1      ; Current number of tasks
+    completed_count    resd 1      ; Number of completed tasks
+    
+    ; Application flags
+    first_run          resd 1      ; Flag for first application run
+    
+    ; I/O buffers and handles
+    input_buffer       resb 1024   ; Buffer for user input
+    bytes_read         resd 1      ; Bytes read from input
+    bytes_written      resd 1      ; Bytes written to output
+    stdout_handle      resd 1      ; Standard output handle
+    stdin_handle       resd 1      ; Standard input handle
+    file_handle        resd 1      ; File handle for save/load operations
+    
+    ; Utility buffers
+    num_buffer         resb 12     ; Buffer for number-to-string conversion
+    
+    ; Operation flags (used in delete and toggle operations)
+    delete_flags       resb MAX_TASKS  ; Flags marking tasks for deletion
 
+; =============================================================================
+; CODE SECTION - APPLICATION LOGIC
+; =============================================================================
 section .text
+
+; -----------------------------------------------------------------------------
+; MAIN PROGRAM ENTRY POINT
+; -----------------------------------------------------------------------------
 main:
+    ; Initialize standard handles
     push STD_OUTPUT_HANDLE
     call _GetStdHandle@4
     mov [stdout_handle], eax
@@ -310,19 +390,23 @@ main:
     call _GetStdHandle@4
     mov [stdin_handle], eax
 
-    mov dword [task_count], 0
-    mov dword [max_tasks_limit], 10
-    mov dword [completed_count], 0
-    mov dword [first_run], 1
+    ; Initialize application state
+    mov dword [task_count], 0           ; Start with no tasks
+    mov dword [max_tasks_limit], 10     ; Default to 10 task slots
+    mov dword [completed_count], 0      ; No completed tasks initially
+    mov dword [first_run], 1            ; Set first run flag
 
+; -----------------------------------------------------------------------------
+; MAIN APPLICATION LOOP
+; -----------------------------------------------------------------------------
 main_loop:
-    call display_menu
-    call read_input
-    movzx eax, byte [input_buffer]
+    call display_menu                   ; Show the main menu
+    call read_input                     ; Get user input
+    
+    movzx eax, byte [input_buffer]      ; Get first character of input
+    mov dword [first_run], 0            ; Clear first run flag after first interaction
 
-    mov dword [first_run], 0
-
-    ; Check for single-digit options first
+    ; Process menu options - single digit options first
     cmp al, '2'
     je view_tasks
     cmp al, '3'
@@ -346,13 +430,16 @@ main_loop:
     jmp check_extended_options
     
 .check_exit_direct:
-    ; Check if it's '0' for direct exit (shouldn't happen normally)
+    ; Check for '0' for direct exit (shouldn't happen normally)
     cmp al, '0'
     je exit_program
     
-    call print_invalid
+    call print_invalid                  ; Invalid input handler
     jmp main_loop
 
+; -----------------------------------------------------------------------------
+; EXTENDED OPTIONS HANDLER (for multi-digit inputs)
+; -----------------------------------------------------------------------------
 check_extended_options:
     ; Check if the input was "10" for sort or "11" for exit
     cmp byte [input_buffer+1], '0'
@@ -363,7 +450,12 @@ check_extended_options:
     ; If not "10" or "11", treat as "1" for add task
     jmp add_task
 
+; -----------------------------------------------------------------------------
+; TASK SLOT MODIFICATION FUNCTION
+; Allows user to change the maximum number of task slots
+; -----------------------------------------------------------------------------
 modify_slots:
+    ; Display modification header and menu
     push 0
     push bytes_written
     push header_modify_slots_len
@@ -371,6 +463,7 @@ modify_slots:
     push dword [stdout_handle]
     call _WriteFile@20
 
+    ; Display slot options
     push 0
     push bytes_written
     push modify_slots_menu_len
@@ -406,6 +499,7 @@ modify_slots:
     push dword [stdout_handle]
     call _WriteFile@20
 
+    ; Get user choice
     push 0
     push bytes_written
     push modify_prompt_len
@@ -416,6 +510,7 @@ modify_slots:
     call read_input
     movzx eax, byte [input_buffer]
 
+    ; Process slot limit choice
     cmp al, '1'
     je .set_10
     cmp al, '2'
@@ -468,11 +563,16 @@ modify_slots:
     call _WriteFile@20
     jmp main_loop
 
+; -----------------------------------------------------------------------------
+; TASK SEARCH FUNCTION
+; Searches tasks for text matches (case-sensitive)
+; -----------------------------------------------------------------------------
 search_tasks:
     mov eax, [task_count]
     cmp eax, 0
     je task_list_empty
 
+    ; Display search header and hints
     push 0
     push bytes_written
     push header_search_len
@@ -480,7 +580,6 @@ search_tasks:
     push dword [stdout_handle]
     call _WriteFile@20
 
-    ; Add case-sensitive hint
     push 0
     push bytes_written
     push hint_search_case_len
@@ -502,22 +601,22 @@ search_tasks:
     je .no_results
 
     ; Search through tasks
-    xor ebx, ebx
-    mov dword [toggle_count], 0  ; Use as match counter
+    xor ebx, ebx                        ; Task index counter
+    mov dword [toggle_count], 0         ; Use as match counter
 
 .search_loop:
     cmp ebx, [task_count]
     jge .search_done
 
-    ; Get current task
+    ; Get current task address
     mov eax, ebx
     mov ecx, TASK_SIZE
     mul ecx
-    lea esi, [tasks + eax]
+    lea esi, [tasks + eax]              ; ESI points to current task
 
     ; Search in task text
-    mov edi, input_buffer
-    call string_contains
+    mov edi, input_buffer               ; EDI points to search term
+    call string_contains                ; Check if task contains search term
 
     cmp eax, 1
     jne .next_task
@@ -542,8 +641,8 @@ search_tasks:
     call _WriteFile@20
 
 .display_task:
-    call print_single_task
-    inc dword [toggle_count]
+    call print_single_task              ; Display the matching task
+    inc dword [toggle_count]            ; Increment match counter
 
 .next_task:
     inc ebx
@@ -574,11 +673,16 @@ search_tasks:
 .done:
     jmp main_loop
 
+; -----------------------------------------------------------------------------
+; TASK SORTING FUNCTION
+; Provides multiple sorting options for tasks
+; -----------------------------------------------------------------------------
 sort_tasks:
     mov eax, [task_count]
     cmp eax, 0
     je task_list_empty
 
+    ; Display sort menu
     push 0
     push bytes_written
     push header_sort_len
@@ -586,7 +690,6 @@ sort_tasks:
     push dword [stdout_handle]
     call _WriteFile@20
 
-    ; Add ESC cancellation hint
     push 0
     push bytes_written
     push hint_esc_cancel_len
@@ -604,13 +707,14 @@ sort_tasks:
     call read_input
     movzx eax, byte [input_buffer]
 
-    ; Check for ESC cancellation (0)
+    ; Check for cancellation
     cmp al, '0'
     jne .continue_sort
     call cancel_operation
     jmp main_loop
 
 .continue_sort:
+    ; Process sort choice
     cmp al, '1'
     je .sort_alpha_asc
     cmp al, '2'
@@ -621,9 +725,6 @@ sort_tasks:
     je .sort_complete_first
     
     call print_invalid
-    jmp main_loop
-
-.cancel_sort:
     jmp main_loop
 
 .sort_alpha_asc:
@@ -649,6 +750,11 @@ sort_tasks:
     push dword [stdout_handle]
     call _WriteFile@20
     jmp main_loop
+
+; -----------------------------------------------------------------------------
+; BUBBLE SORT IMPLEMENTATIONS
+; Various sorting algorithms for different criteria
+; -----------------------------------------------------------------------------
 
 ; Bubble sort for alphabetical A-Z
 bubble_sort_alpha_asc:
@@ -859,6 +965,11 @@ bubble_sort_complete_first:
 
 .done:
     ret
+
+; -----------------------------------------------------------------------------
+; UTILITY FUNCTIONS
+; Helper functions for string operations and task management
+; -----------------------------------------------------------------------------
 
 ; Helper function to compare two strings
 ; Input: ESI = string1, EDI = string2
@@ -1121,6 +1232,12 @@ print_single_task:
 
     ret
 
+; -----------------------------------------------------------------------------
+; TASK MANAGEMENT FUNCTIONS
+; Core functionality for task operations
+; -----------------------------------------------------------------------------
+
+; Add new task(s) function
 add_task:
     push 0
     push bytes_written
@@ -1293,6 +1410,7 @@ task_list_full:
     call _WriteFile@20
     jmp main_loop
 
+; View all tasks function  
 view_tasks:
     mov eax, [task_count]
     cmp eax, 0
@@ -1427,6 +1545,7 @@ task_list_empty:
     call _WriteFile@20
     jmp main_loop
 
+; Update existing task function
 update_task:
     mov eax, [task_count]
     cmp eax, 0
@@ -1540,6 +1659,7 @@ update_task:
     call _WriteFile@20
     jmp main_loop
 
+; Delete task(s) function
 delete_task:
     mov eax, [task_count]
     cmp eax, 0
@@ -1732,6 +1852,7 @@ delete_task:
 
     jmp main_loop
 
+; Toggle task completion status function
 toggle_complete:
     mov eax, [task_count]
     cmp eax, 0
@@ -1886,6 +2007,12 @@ toggle_complete:
 .skip_toggle_success:
     jmp main_loop
 
+; -----------------------------------------------------------------------------
+; FILE OPERATIONS
+; Save and load tasks to/from disk
+; -----------------------------------------------------------------------------
+
+; Save tasks to file
 save_tasks:
     push 0
     push bytes_written
@@ -1957,6 +2084,7 @@ save_error:
     call _WriteFile@20
     jmp main_loop
 
+; Load tasks from file  
 load_tasks:
     push 0
     push bytes_written
@@ -2039,6 +2167,12 @@ load_error:
     call _WriteFile@20
     jmp main_loop
 
+; -----------------------------------------------------------------------------
+; UI AND HELPER FUNCTIONS
+; User interface and utility functions
+; -----------------------------------------------------------------------------
+
+; Display loading animation
 show_spinner:
     push 0
     push bytes_written
@@ -2082,6 +2216,7 @@ show_spinner:
 
     ret
 
+; Count completed tasks
 count_completed:
     push eax
     push ecx
@@ -2116,6 +2251,7 @@ count_completed:
     pop eax
     ret
 
+; Display main menu
 display_menu:
     call print_newline
 
@@ -2441,6 +2577,7 @@ display_menu:
 
     ret
 
+; Number to string conversion
 num_to_string:
     push ebx
     push ecx
@@ -2487,6 +2624,7 @@ num_to_string:
     pop ebx
     ret
 
+; Read user input
 read_input:
     lea edi, [input_buffer]
     mov ecx, 1024
@@ -2527,6 +2665,7 @@ read_input:
 .done:
     ret
 
+; Print newline
 print_newline:
     push 0
     push bytes_written
@@ -2536,6 +2675,7 @@ print_newline:
     call _WriteFile@20
     ret
 
+; Print invalid option message
 print_invalid:
     push 0
     push bytes_written
@@ -2545,6 +2685,7 @@ print_invalid:
     call _WriteFile@20
     ret
 
+; Cancel operation handler
 cancel_operation:
     push 0
     push bytes_written
@@ -2554,6 +2695,9 @@ cancel_operation:
     call _WriteFile@20
     ret
 
+; -----------------------------------------------------------------------------
+; PROGRAM EXIT
+; -----------------------------------------------------------------------------
 exit_program:
     push 0
     call _ExitProcess@4
