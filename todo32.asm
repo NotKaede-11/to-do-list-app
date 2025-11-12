@@ -153,6 +153,25 @@ section .data
     msg_sorted         db 13, 10, "  >>> Tasks sorted successfully!", 13, 10
     msg_sorted_len     equ $ - msg_sorted
 
+    msg_warning_truncate db 13, 10, "  ! Warning: Reducing slots will delete excess tasks!", 13, 10
+    msg_warning_truncate_len equ $ - msg_warning_truncate
+    
+    msg_tasks_truncated db 13, 10, "  >>> Deleted ", 0
+    msg_tasks_truncated_len equ $ - msg_tasks_truncated
+    
+    msg_tasks_kept db " tasks to fit new limit. Kept ", 0
+    msg_tasks_kept_len equ $ - msg_tasks_kept
+    
+    msg_tasks_remaining db " tasks.", 13, 10
+    msg_tasks_remaining_len equ $ - msg_tasks_remaining
+
+    ; Confirmation prompts for slot modification
+    confirm_truncate_prompt db 13, 10, "  Are you sure you want to delete excess tasks? (y/n): "
+    confirm_truncate_prompt_len equ $ - confirm_truncate_prompt
+    
+    msg_truncate_cancelled db 13, 10, "  >>> Slot modification cancelled", 13, 10
+    msg_truncate_cancelled_len equ $ - msg_truncate_cancelled
+
     ; Task slot modification messages
     modify_slots_menu  db 13, 10, " Select task slot limit:", 13, 10
     modify_slots_menu_len equ $ - modify_slots_menu
@@ -462,6 +481,14 @@ modify_slots:
     push dword [stdout_handle]
     call _WriteFile@20
 
+    ; >>> Tip: Press 0 then Enter to cancel any operation
+    push 0
+    push bytes_written
+    push hint_esc_cancel_len
+    push hint_esc_cancel
+    push dword [stdout_handle]
+    call _WriteFile@20
+
     ; Display slot options
     push 0
     push bytes_written
@@ -507,6 +534,14 @@ modify_slots:
     call _WriteFile@20
 
     call read_input
+    
+    ; Check for cancellation (0)
+    cmp byte [input_buffer], '0'
+    jne .continue_modify
+    call cancel_operation
+    jmp main_loop
+
+.continue_modify:
     movzx eax, byte [input_buffer]
 
     ; Process slot limit choice
@@ -523,6 +558,77 @@ modify_slots:
     jmp main_loop
 
 .set_10:
+    ; Check if we need to truncate tasks
+    mov eax, [task_count]
+    cmp eax, 10
+    jle .no_truncate_10
+    
+    ; Show warning
+    push 0
+    push bytes_written
+    push msg_warning_truncate_len
+    push msg_warning_truncate
+    push dword [stdout_handle]
+    call _WriteFile@20
+    
+    ; Ask for confirmation
+    call confirm_operation
+    cmp eax, 0
+    je main_loop  ; User cancelled
+    
+    ; User confirmed - proceed with truncation
+    ; Calculate how many to delete
+    mov eax, [task_count]
+    sub eax, 10
+    mov [toggle_count], eax  ; Store deletion count
+    
+    ; Truncate to 10 tasks
+    mov dword [task_count], 10
+    
+    ; Recalculate completed count
+    call count_completed
+    
+    ; Show truncation message
+    push 0
+    push bytes_written
+    push msg_tasks_truncated_len
+    push msg_tasks_truncated
+    push dword [stdout_handle]
+    call _WriteFile@20
+    
+    mov eax, [toggle_count]
+    call num_to_string
+    push 0
+    push bytes_written
+    push eax
+    push num_buffer
+    push dword [stdout_handle]
+    call _WriteFile@20
+    
+    push 0
+    push bytes_written
+    push msg_tasks_kept_len
+    push msg_tasks_kept
+    push dword [stdout_handle]
+    call _WriteFile@20
+    
+    mov eax, [task_count]
+    call num_to_string
+    push 0
+    push bytes_written
+    push eax
+    push num_buffer
+    push dword [stdout_handle]
+    call _WriteFile@20
+    
+    push 0
+    push bytes_written
+    push msg_tasks_remaining_len
+    push msg_tasks_remaining
+    push dword [stdout_handle]
+    call _WriteFile@20
+    
+.no_truncate_10:
     mov dword [max_tasks_limit], 10
     push 0
     push bytes_written
@@ -533,6 +639,77 @@ modify_slots:
     jmp main_loop
 
 .set_15:
+    ; Check if we need to truncate tasks
+    mov eax, [task_count]
+    cmp eax, 15
+    jle .no_truncate_15
+    
+    ; Show warning
+    push 0
+    push bytes_written
+    push msg_warning_truncate_len
+    push msg_warning_truncate
+    push dword [stdout_handle]
+    call _WriteFile@20
+    
+    ; Ask for confirmation
+    call confirm_operation
+    cmp eax, 0
+    je main_loop  ; User cancelled
+    
+    ; User confirmed - proceed with truncation
+    ; Calculate how many to delete
+    mov eax, [task_count]
+    sub eax, 15
+    mov [toggle_count], eax  ; Store deletion count
+    
+    ; Truncate to 15 tasks
+    mov dword [task_count], 15
+    
+    ; Recalculate completed count
+    call count_completed
+    
+    ; Show truncation message
+    push 0
+    push bytes_written
+    push msg_tasks_truncated_len
+    push msg_tasks_truncated
+    push dword [stdout_handle]
+    call _WriteFile@20
+    
+    mov eax, [toggle_count]
+    call num_to_string
+    push 0
+    push bytes_written
+    push eax
+    push num_buffer
+    push dword [stdout_handle]
+    call _WriteFile@20
+    
+    push 0
+    push bytes_written
+    push msg_tasks_kept_len
+    push msg_tasks_kept
+    push dword [stdout_handle]
+    call _WriteFile@20
+    
+    mov eax, [task_count]
+    call num_to_string
+    push 0
+    push bytes_written
+    push eax
+    push num_buffer
+    push dword [stdout_handle]
+    call _WriteFile@20
+    
+    push 0
+    push bytes_written
+    push msg_tasks_remaining_len
+    push msg_tasks_remaining
+    push dword [stdout_handle]
+    call _WriteFile@20
+    
+.no_truncate_15:
     mov dword [max_tasks_limit], 15
     push 0
     push bytes_written
@@ -543,6 +720,77 @@ modify_slots:
     jmp main_loop
 
 .set_20:
+    ; Check if we need to truncate tasks
+    mov eax, [task_count]
+    cmp eax, 20
+    jle .no_truncate_20
+    
+    ; Show warning
+    push 0
+    push bytes_written
+    push msg_warning_truncate_len
+    push msg_warning_truncate
+    push dword [stdout_handle]
+    call _WriteFile@20
+    
+    ; Ask for confirmation
+    call confirm_operation
+    cmp eax, 0
+    je main_loop  ; User cancelled
+    
+    ; User confirmed - proceed with truncation
+    ; Calculate how many to delete
+    mov eax, [task_count]
+    sub eax, 20
+    mov [toggle_count], eax  ; Store deletion count
+    
+    ; Truncate to 20 tasks
+    mov dword [task_count], 20
+    
+    ; Recalculate completed count
+    call count_completed
+    
+    ; Show truncation message
+    push 0
+    push bytes_written
+    push msg_tasks_truncated_len
+    push msg_tasks_truncated
+    push dword [stdout_handle]
+    call _WriteFile@20
+    
+    mov eax, [toggle_count]
+    call num_to_string
+    push 0
+    push bytes_written
+    push eax
+    push num_buffer
+    push dword [stdout_handle]
+    call _WriteFile@20
+    
+    push 0
+    push bytes_written
+    push msg_tasks_kept_len
+    push msg_tasks_kept
+    push dword [stdout_handle]
+    call _WriteFile@20
+    
+    mov eax, [task_count]
+    call num_to_string
+    push 0
+    push bytes_written
+    push eax
+    push num_buffer
+    push dword [stdout_handle]
+    call _WriteFile@20
+    
+    push 0
+    push bytes_written
+    push msg_tasks_remaining_len
+    push msg_tasks_remaining
+    push dword [stdout_handle]
+    call _WriteFile@20
+    
+.no_truncate_20:
     mov dword [max_tasks_limit], 20
     push 0
     push bytes_written
@@ -553,6 +801,77 @@ modify_slots:
     jmp main_loop
 
 .set_30:
+    ; Check if we need to truncate tasks
+    mov eax, [task_count]
+    cmp eax, 30
+    jle .no_truncate_30
+    
+    ; Show warning
+    push 0
+    push bytes_written
+    push msg_warning_truncate_len
+    push msg_warning_truncate
+    push dword [stdout_handle]
+    call _WriteFile@20
+    
+    ; Ask for confirmation
+    call confirm_operation
+    cmp eax, 0
+    je main_loop  ; User cancelled
+    
+    ; User confirmed - proceed with truncation
+    ; Calculate how many to delete
+    mov eax, [task_count]
+    sub eax, 30
+    mov [toggle_count], eax  ; Store deletion count
+    
+    ; Truncate to 30 tasks
+    mov dword [task_count], 30
+    
+    ; Recalculate completed count
+    call count_completed
+    
+    ; Show truncation message
+    push 0
+    push bytes_written
+    push msg_tasks_truncated_len
+    push msg_tasks_truncated
+    push dword [stdout_handle]
+    call _WriteFile@20
+    
+    mov eax, [toggle_count]
+    call num_to_string
+    push 0
+    push bytes_written
+    push eax
+    push num_buffer
+    push dword [stdout_handle]
+    call _WriteFile@20
+    
+    push 0
+    push bytes_written
+    push msg_tasks_kept_len
+    push msg_tasks_kept
+    push dword [stdout_handle]
+    call _WriteFile@20
+    
+    mov eax, [task_count]
+    call num_to_string
+    push 0
+    push bytes_written
+    push eax
+    push num_buffer
+    push dword [stdout_handle]
+    call _WriteFile@20
+    
+    push 0
+    push bytes_written
+    push msg_tasks_remaining_len
+    push msg_tasks_remaining
+    push dword [stdout_handle]
+    call _WriteFile@20
+    
+.no_truncate_30:
     mov dword [max_tasks_limit], 30
     push 0
     push bytes_written
@@ -1132,6 +1451,45 @@ string_contains:
     pop edx
     pop ecx
     pop ebx
+    ret
+
+    ret
+
+; -----------------------------------------------------------------------------
+; CONFIRMATION PROMPT FUNCTION
+; Asks user for yes/no confirmation
+; Output: EAX = 1 if confirmed, 0 if cancelled
+; -----------------------------------------------------------------------------
+confirm_operation:
+    push 0
+    push bytes_written
+    push confirm_truncate_prompt_len
+    push confirm_truncate_prompt
+    push dword [stdout_handle]
+    call _WriteFile@20
+    
+    call read_input
+    movzx eax, byte [input_buffer]
+    
+    ; Check for 'y' or 'Y'
+    cmp al, 'y'
+    je .confirmed
+    cmp al, 'Y'
+    je .confirmed
+    
+    ; Not confirmed - show cancellation message
+    push 0
+    push bytes_written
+    push msg_truncate_cancelled_len
+    push msg_truncate_cancelled
+    push dword [stdout_handle]
+    call _WriteFile@20
+    
+    xor eax, eax  ; Return 0 (cancelled)
+    ret
+    
+.confirmed:
+    mov eax, 1    ; Return 1 (confirmed)
     ret
 
 ; Helper function to print a single task
@@ -2252,6 +2610,9 @@ count_completed:
 
 ; Display main menu
 display_menu:
+    ; Clear previous input to prevent wrong header display
+    mov byte [input_buffer], 0
+    
     call print_newline
 
     cmp dword [first_run], 1
