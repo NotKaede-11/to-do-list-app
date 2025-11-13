@@ -121,7 +121,7 @@ If you have Visual Studio 2022 installed:
 
 ### Essential Files (Required)
 
-- `todo32.asm` - Main application source code (2,182 lines)
+- `todo32.asm` - Main application source code (3,063 lines)
 - `todo32.exe` - Compiled executable (ready to run)
 - `build-golink.bat` - Build script using GoLink
 - `Golink/GoLink.exe` - Lightweight linker (no VS required)
@@ -151,7 +151,9 @@ Total: 0/10 tasks
   6. Save Tasks
   7. Load Tasks
   8. Modify Task Slots
-  9. Exit
+  9. Search Tasks
+  10. Sort Tasks
+  11. Exit
 
   Choose option: _
 ```
@@ -162,6 +164,8 @@ Total: 0/10 tasks
 - **Cancel any operation:** Press `0` then Enter
 - **Delete specific tasks:** Enter task numbers separated by spaces: `1 3 5`
 - **Toggle multiple tasks:** Enter task numbers separated by spaces: `2 4 6`
+- **Search for tasks:** Use option 9 to find tasks by keyword
+- **Sort alphabetically:** Use option 10 to organize your task list
 - **Save your work:** Always save (option 6) before exiting!
 
 ---
@@ -174,8 +178,8 @@ Total: 0/10 tasks
 - **Architecture:** 32-bit Windows PE executable
 - **API:** Windows kernel32.dll (stdcall convention)
 - **File Format:** Binary task storage in `tasks.dat`
-- **Code Size:** 2,182 lines of assembly
-- **Executable Size:** ~9 KB
+- **Code Size:** 3,063 lines of assembly
+- **Executable Size:** ~13 KB
 
 ### Key Functions
 
@@ -187,6 +191,8 @@ Total: 0/10 tasks
 - `toggle_complete` - Status toggling with checkbox updates
 - `save_tasks` / `load_tasks` - Binary file persistence
 - `modify_slots` - Dynamic task limit adjustment
+- `search_tasks` - Keyword-based task search
+- `sort_tasks` - Alphabetical task sorting
 - `display_tasks_preview` - Preview table for operations
 - `wait_for_enter` - User-friendly pause mechanism
 - `cancel_operation` - ESC/cancel handling
@@ -228,6 +234,13 @@ This project was developed in phases with comprehensive testing:
 - Comprehensive README
 - File organization and cleanup
 - Complete project documentation
+
+### ✅ Phase 5: Search & Sort Features
+
+- **Search Tasks** - Case-sensitive substring search across all tasks
+- **Sort Tasks** - Alphabetical sorting (A-Z) of task list
+- Extended menu to 11 options for new features
+- Enhanced user workflow with advanced task management
 
 ---
 
@@ -292,12 +305,12 @@ nasm -f win32 todo32.asm -o todo32.obj
 
 ## 📊 Project Stats
 
-- **Total Code:** 2,182 lines of assembly
+- **Total Code:** 3,063 lines of assembly
 - **Development Time:** Multiple phases over several iterations
-- **Test Coverage:** 25+ test cases across 3 test suites
-- **Functions:** 15+ major functions
+- **Test Coverage:** 30+ test cases across 5 test suites
+- **Functions:** 20+ major functions
 - **API Calls:** 8 Windows API functions utilized
-- **File Size:** ~9 KB (executable)
+- **File Size:** ~13 KB (executable)
 
 ---
 
@@ -318,7 +331,8 @@ This is an educational project, but contributions are welcome:
 - Add due dates
 - Create task categories
 - Export to text/CSV
-- Add search functionality
+- Add task filtering options
+- Implement undo/redo functionality
 
 ---
 
@@ -364,5 +378,6 @@ For bug reports or feature requests, please open an issue on the repository.
 
 ## Version History
 
+- **v2.1** (2025) - Added Search and Sort features, extended to 11 menu options
 - **v2.0** (2025) - Enhanced version with ESC cancel, task preview, and press-enter pauses
 - **v1.0** (2025) - Initial release with core task management features
