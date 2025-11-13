@@ -1,82 +1,72 @@
-# To-Do List Application (x86 Assembly)# To-Do List Application
+# To-Do List Application (x86 Assembly)
 
-[![Platform](https://img.shields.io/badge/platform-Windows-blue.svg)](https://www.microsoft.com/windows)## App Description
-
-[![Assembly](https://img.shields.io/badge/language-x86%20Assembly-orange.svg)](https://www.nasm.us/)This is a console-based To-Do List application written in 32-bit x86 assembly language using NASM, designed for Windows environments. Currently in its early development stage, the app features an interactive menu, multi-task input via semicolons, selective deletion and toggling, and customizable task slot limits (10, 15, 20, or 30)—with room for expanding features—making it a practical educational project for low-level programming concepts like file I/O and console handling.
-
+[![Platform](https://img.shields.io/badge/platform-Windows-blue.svg)](https://www.microsoft.com/windows)
+[![Assembly](https://img.shields.io/badge/language-x86%20Assembly-orange.svg)](https://www.nasm.us/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-## App File Components and Generation
+A feature-rich, console-based task management application written in 32-bit x86 assembly language using NASM for Windows. This project demonstrates low-level programming concepts including Windows API integration, file I/O, memory management, and user-friendly console interfaces—all without using high-level languages.
 
-A feature-rich, console-based task management application written in 32-bit x86 assembly language using NASM for Windows. This project demonstrates low-level programming concepts including Windows API integration, file I/O, memory management, and user-friendly console interfaces—all without using high-level languages.The project consists of two main files: `todo32.asm` (the source code) and `build32.bat` (the build script). The assembly source defines the program's data sections for strings, buffers, and UI elements like menus, prompts, and ASCII borders, along with the text section implementing the main loop, input/output via Windows API calls (e.g., \_WriteFile, \_ReadFile, \_CreateFileA), and logic for task operations.
+---
 
----To generate the executable, place both files in the same directory and run `build32.bat` in a Developer Command Prompt for VS 2022. This script first assembles `todo32.asm` into `todo32.obj` using `nasm -f win32`, then links it with `link.exe` from Visual Studio to produce `todo32.exe`, linking against kernel32.lib for console subsystem and x86 machine targeting. If errors occur during assembly or linking, the script displays "Build failed!" and exits; success outputs "Build successful! Run todo32.exe".
+## 📑 Table of Contents
 
-## 📋 Features## App Standalone
+- [Quick Start](#-quick-start)
+- [Features](#-features)
+- [Usage Guide](#-usage-guide)
+- [For Developers (Build from Source)](#️-for-developers-build-from-source)
+- [What's Included](#-whats-included)
+- [Architecture & Implementation](#️-architecture--implementation)
+- [Development Phases](#-development-phases)
+- [Use Cases](#-use-cases)
+- [Customization](#-customization)
+- [Troubleshooting](#-troubleshooting)
+- [Project Stats](#-project-stats)
+- [Contributing](#-contributing)
+- [Authors](#-authors)
+- [Version History](#-version-history)
 
-Once built, `todo32.exe` is a standalone 32-bit Windows console executable that runs without additional dependencies beyond the standard Windows kernel32.dll library, which is pre-installed on modern Windows systems. It handles all task data in memory and saves/loads from "tasks.dat" in the current directory, requiring no runtime installation of NASM or Visual Studio tools for execution. Users can distribute the .exe file alone for others to run on 32-bit or 64-bit Windows machines compatible with x86 emulation, though it performs best in a 32-bit environment to avoid potential compatibility issues.
+---
 
-### Core Task Management
-
-- ✅ **Add Tasks** - Single or multiple tasks at once (separated by `;`)## App Prerequisites for Updating
-
-- ✅ **View All Tasks** - Display tasks in a clean, bordered table formatTo update the app (e.g., modify source code, rebuild, or customize features like task limits), install NASM and Visual Studio 2022 as outlined in the setup guide below. No other prerequisites are needed, but ensure you're working in a 32-bit build context for compatibility. For source changes in `todo32.asm`, adjust constants like MAX_TASKS or add new menu options, then rebuild with `build32.bat` to generate an updated `todo32.exe`. If extending file persistence or UI, verify Windows API externs remain compatible with kernel32.lib.
-
-- ✅ **Update Task** - Modify task descriptions
-
-- ✅ **Delete Task** - Remove all tasks or select specific ones## Setup Guide
-
-- ✅ **Toggle Complete** - Mark tasks as done/undone with checkbox indicators `[ ]` / `[+]`
-
-- ✅ **Save/Load** - Persist tasks to disk in binary format### Install NASM (The Assembler)
-
-- ✅ **Modify Slots** - Adjust task limit (10, 15, 20, or 30 tasks)NASM assembles the 32-bit assembly code into an object file. Download NASM 3.01 for Win32 from the [official release builds](https://www.nasm.us/pub/nasm/releasebuilds/3.01/win32/nasm-3.01-win32.zip). Extract the ZIP to a path like C:\nasm-3.01, then add this path to your Windows system PATH via [Environment Variables in System Properties](https://www.youtube.com/shorts/X1vFywT0--g). Verify by opening a new Command Prompt and running `nasm -v` to display the version.
-
-### User Experience Enhancements### Install Visual Studio 2022 (The Linker)
-
-- 🎯 **ESC to Cancel** - Press `0` to cancel any operationVisual Studio provides the linker (link.exe) for creating the executable from the object file. Download the free Community edition installer from the [official site](https://visualstudio.microsoft.com/downloads/). During installation, select the "Desktop development with C++" workload and include only essential components: C++ core desktop features, MSVC v143 - VS 2022 C++ x64/x86 build tools, the latest Windows SDK, and Just-In-Time debugger. Complete the installation to access the Developer Command Prompt.
-
-- 👀 **Task Preview** - See all tasks before Update/Delete/Toggle operations
-
-- ⏸️ **Press Enter to Continue** - Read output before returning to menu### Build the Application
-
-- 🧹 **Input Validation** - Automatic whitespace trimming, empty task rejectionUse the "Developer Command Prompt for VS 2022" (search in Start Menu) to ensure link.exe is in PATH—do not use standard Command Prompt. Navigate to your project directory with `cd`, for example:
-
-- 📊 **Task Counters** - Shows completed vs. remaining tasks in real-time```
-
-- 🎨 **Bordered UI** - Clean ASCII art borders and formatted displaysC:\Users\Admin\App> cd C:\Path\To\Your\Project
-
-- 💡 **Helpful Hints** - Contextual tips for complex operations```
-
-Then execute `build32.bat` by typing its name and pressing Enter:
-
----```
-
-C:\Path\To\Your\Project> build32.bat
-
-## 🚀 Quick Start```
-
-On success, `todo32.exe` appears in the folder; run it directly to use the app.
+## 🚀 Quick Start
 
 ### For End Users (Just Run It)
 
-1. Download `todo32.exe`## Troubleshooting
+1. Download **only** `todo32.exe` (standalone - no other files needed!)
+2. Double-click or run from command prompt:
+   ```powershell
+   .\todo32.exe
+   ```
+3. Start managing your tasks!
 
-2. Double-click or run from command prompt:Common issues arise from setup errors; refer to this table for solutions.
+**Optional:** Download `Sample Input – 30 Task List.txt` to see example tasks you can paste into the app.
 
-   ````powershell
+**Note:** Requires Windows (32-bit or 64-bit). The exe is completely standalone - no installation, no dependencies, no other files required.
 
-   .\todo32.exe| Error Message | Cause and Solution |
+---
 
-   ```|---------------|--------------------|
+## 📋 Features
 
-   ````
+### Core Task Management
 
-3. Start managing your tasks!| `'nasm' is not recognized...` | NASM PATH not set correctly. Re-add C:\nasm-3.01 to system PATH and restart Command Prompt.|
+- ✅ **Add Tasks** - Single or multiple tasks at once (separated by `;`)
+- ✅ **View All Tasks** - Display tasks in a clean, bordered table format
+- ✅ **Update Task** - Modify task descriptions
+- ✅ **Delete Task** - Remove all tasks or select specific ones
+- ✅ **Toggle Complete** - Mark tasks as done/undone with checkbox indicators `[ ]` / `[+]`
+- ✅ **Save/Load** - Persist tasks to disk in binary format
+- ✅ **Modify Slots** - Adjust task limit (10, 15, 20, or 30 tasks)
+- ✅ **Search Tasks** - Find tasks by keyword (case-sensitive substring search)
+- ✅ **Sort Tasks** - Alphabetically sort your task list (A-Z)
 
-| `'link.exe' is not recognized...` | Wrong prompt used. Switch to "Developer Command Prompt for VS 2022".|
+### User Experience Enhancements
 
-**Note:** Requires Windows (32-bit or 64-bit). No installation needed.| `Build failed!` | Missing files or assembly errors. Confirm `todo32.asm` and `build32.bat` are in the same directory; check source for syntax issues in .asm file.|
+- 🎯 **ESC to Cancel** - Press `0` to cancel any operation
+- 👀 **Task Preview** - See all tasks before Update/Delete/Toggle operations
+- ⏸️ **Press Enter to Continue** - Read output before returning to menu
+- 🧹 **Input Validation** - Automatic whitespace trimming, empty task rejection
+- 📊 **Task Counters** - Shows completed vs. remaining tasks in real-time
+- 🎨 **Bordered UI** - Clean ASCII art borders and formatted displays
+- 💡 **Helpful Hints** - Contextual tips for complex operations
 
 ---
 
@@ -342,7 +332,7 @@ This project is open source and available under the MIT License.
 
 ---
 
-## � Authors
+## 👥 Authors
 
 **Group 3:**
 
@@ -355,7 +345,7 @@ This project is open source and available under the MIT License.
 
 ---
 
-## �🙏 Acknowledgments
+## 🙏 Acknowledgments
 
 - **NASM** - The Netwide Assembler team
 - **GoLink** - Jeremy Gordon for the lightweight linker
@@ -376,7 +366,7 @@ For bug reports or feature requests, please open an issue on the repository.
 
 ---
 
-## Version History
+## 📜 Version History
 
 - **v2.1** (2025) - Added Search and Sort features, extended to 11 menu options
 - **v2.0** (2025) - Enhanced version with ESC cancel, task preview, and press-enter pauses
